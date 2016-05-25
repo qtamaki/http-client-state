@@ -17,8 +17,9 @@ object Http {
       val newSession = invokeRequest(method, req, next)
       (newSession, newSession.lastRes)
     case EmptySession =>
-      val req = Request(url).queryParams(params:_*)
-      val newSession = invokeRequest(method, req, new URL(url))
+      val init = initUrl(url)
+      val req = Request(init).queryParams(params:_*)
+      val newSession = invokeRequest(method, req, new URL(init))
       (newSession, newSession.lastRes)
   } 
   
@@ -37,8 +38,9 @@ object Http {
       val newSession = invokeRequest(method, req, next)
       (newSession, newSession.lastRes)
     case EmptySession =>
-      val req = Request(url).body(body.getBytes(StandardCharsets.UTF_8))
-      val newSession = invokeRequest(method, req, new URL(url))
+      val init = initUrl(url)
+      val req = Request(init).body(body.getBytes(StandardCharsets.UTF_8))
+      val newSession = invokeRequest(method, req, new URL(init))
       (newSession, newSession.lastRes)
   } 
 
@@ -52,8 +54,9 @@ object Http {
       val newSession = invokeRequest(method, req, next)
       (newSession, newSession.lastRes)
     case EmptySession =>
-      val req = Request(url).body(toBytes(json), "application/json; charset=utf-8")
-      val newSession = invokeRequest(method, req, new URL(url))
+      val init = initUrl(url)
+      val req = Request(init).body(toBytes(json), "application/json; charset=utf-8")
+      val newSession = invokeRequest(method, req, new URL(init))
       (newSession, newSession.lastRes)
   } 
 
@@ -76,6 +79,14 @@ object Http {
     SomeSession(cookie, res, req, nextUrl)
   }
 
+  private def initUrl(url: String): String = {
+    if(url.contains("://")) {
+      url
+    } else {
+      "http://" + url
+    }
+  }
+  
   private def nextUrl(url: String, lastUrl: URL): URL = {
     // urlが/で始まっていればサイト内絶対パスそうでなければ最終ページからの相対パス
     def mkList = if(url.startsWith("/")) {

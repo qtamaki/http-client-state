@@ -14,4 +14,5 @@ initialCommands in console :=
   import org.json4s.JsonDSL._
   import org.json4s.native.JsonMethods._
   import httpclient.state._
+  import httpclient.state.Http._
   """
