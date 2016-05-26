@@ -3,7 +3,7 @@ package httpclient.state
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import scala.util.Try
-import scalaz._
+import scalaz.State
 import skinny.http.{HTTP, Request, Response, Method}
 import org.json4s.JValue
 import org.json4s.native.JsonMethods
@@ -85,4 +85,3 @@ object Http {
   private def toBytes(json: JValue): Array[Byte] = JsonMethods.pretty(JsonMethods.render(json)).getBytes(StandardCharsets.UTF_8)
 }
 
-case class HttpException(mes: String) extends RuntimeException(mes)
