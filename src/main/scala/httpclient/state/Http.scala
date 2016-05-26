@@ -10,58 +10,32 @@ import org.json4s.native.JsonMethods
 
 object Http {
  
-  private def paramRequest(method: Method, url: String, params: (String, String)*): State[Session, Response] = State[Session, Response] {
+  def get(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.GET, url) { req => req.queryParams(params:_*) }
+  def head(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.HEAD, url) { req => req.queryParams(params:_*) }
+  def post(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.POST, url) { req => req.queryParams(params:_*) }
+  def put(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.PUT, url) { req => req.queryParams(params:_*) }
+  def delete(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.DELETE, url) { req => req.queryParams(params:_*) }
+  def options(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.OPTIONS, url) { req => req.queryParams(params:_*) }
+  def trace(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.TRACE, url) { req => req.queryParams(params:_*) }
+
+  def post(url: String, body: String): State[Session, Response] = buildRequest(Method.POST, url) { req => req.body(body.getBytes(StandardCharsets.UTF_8)) }
+  def put(url: String, body: String): State[Session, Response] = buildRequest(Method.PUT, url) { req => req.body(body.getBytes(StandardCharsets.UTF_8)) }
+
+  def post(url: String, json: JValue): State[Session, Response] = buildRequest(Method.POST, url) { req => req.body(toBytes(json), "application/json; charset=utf-8") }
+  def put(url: String, json: JValue): State[Session, Response] = buildRequest(Method.PUT, url) { req => req.body(toBytes(json), "application/json; charset=utf-8") }
+
+  private def buildRequest(method: Method, url: String)(f: Request => Request): State[Session, Response] = State[Session, Response] {
     case SomeSession(cookie, lastRes, lastReq, lastUrl) =>
       val next = nextUrl(url, lastUrl)
-      val req = Request(next.toString).queryParams(params:_*).header("Cookie", cookie.toString)
+      val req = f(Request(next.toString)).header("Cookie", cookie.toString)
       val newSession = invokeRequest(method, req, next)
       (newSession, newSession.lastRes)
     case EmptySession =>
       val init = initUrl(url)
-      val req = Request(init).queryParams(params:_*)
+      val req = f(Request(init))
       val newSession = invokeRequest(method, req, new URL(init))
       (newSession, newSession.lastRes)
   } 
-  
-  def get(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.GET, url, params:_*)
-  def head(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.HEAD, url, params:_*)
-  def post(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.POST, url, params:_*)
-  def put(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.PUT, url, params:_*)
-  def delete(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.DELETE, url, params:_*)
-  def options(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.OPTIONS, url, params:_*)
-  def trace(url: String, params: (String, String)*): State[Session, Response] = paramRequest(Method.TRACE, url, params:_*)
-
-  private def bodyRequest(method: Method, url: String, body: String): State[Session, Response] = State[Session, Response] {
-    case SomeSession(cookie, lastRes, lastReq, lastUrl) =>
-      val next = nextUrl(url, lastUrl)
-      val req = Request(next.toString).body(body.getBytes(StandardCharsets.UTF_8)).header("Cookie", cookie.toString)
-      val newSession = invokeRequest(method, req, next)
-      (newSession, newSession.lastRes)
-    case EmptySession =>
-      val init = initUrl(url)
-      val req = Request(init).body(body.getBytes(StandardCharsets.UTF_8))
-      val newSession = invokeRequest(method, req, new URL(init))
-      (newSession, newSession.lastRes)
-  } 
-
-  def post(url: String, body: String): State[Session, Response] = bodyRequest(Method.POST, url, body)
-  def put(url: String, body: String): State[Session, Response] = bodyRequest(Method.PUT, url, body)
-
-  private def jsonRequest(method: Method, url: String, json: JValue): State[Session, Response] = State[Session, Response] {
-    case SomeSession(cookie, lastRes, lastReq, lastUrl) =>
-      val next = nextUrl(url, lastUrl)
-      val req = Request(next.toString).body(toBytes(json), "application/json; charset=utf-8").header("Cookie", cookie.toString)
-      val newSession = invokeRequest(method, req, next)
-      (newSession, newSession.lastRes)
-    case EmptySession =>
-      val init = initUrl(url)
-      val req = Request(init).body(toBytes(json), "application/json; charset=utf-8")
-      val newSession = invokeRequest(method, req, new URL(init))
-      (newSession, newSession.lastRes)
-  } 
-
-  def post(url: String, json: JValue): State[Session, Response] = jsonRequest(Method.POST, url, json)
-  def put(url: String, json: JValue): State[Session, Response] = jsonRequest(Method.PUT, url, json)
 
   private def invokeRequest(method: Method, req: Request, nextUrl: URL): SomeSession = {
     def f(req: Request): Response = {
