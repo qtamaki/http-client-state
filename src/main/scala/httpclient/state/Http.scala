@@ -10,6 +10,8 @@ import org.json4s.native.JsonMethods
 
 object Http {
  
+  def run[A](st:State[Session,A]):(Session, A) = st.run(Session.empty)
+  
   def get(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.GET, url) { req => req.queryParams(params:_*) }
   def head(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.HEAD, url) { req => req.queryParams(params:_*) }
   def post(url: String, params: (String, String)*): State[Session, Response] = buildRequest(Method.POST, url) { req => req.queryParams(params:_*) }
