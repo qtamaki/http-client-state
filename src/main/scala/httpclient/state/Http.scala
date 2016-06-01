@@ -27,19 +27,19 @@ object Http {
   def put(url: String, json: JValue): State[Session, Response] = buildRequest(Method.PUT, url) { req => req.body(toBytes(json), "application/json; charset=utf-8") }
 
   private def buildRequest(method: Method, url: String)(f: Request => Request): State[Session, Response] = State[Session, Response] {
-    case SomeSession(cookie, lastRes, lastReq, lastUrl) =>
+    case session@SomeSession(cookie, lastRes, lastReq, lastUrl, prev) =>
       val next = nextUrl(url, lastUrl)
       val req = f(Request(next.toString)).header("Cookie", cookie.toString)
-      val newSession = invokeRequest(method, req, next)
+      val newSession = invokeRequest(method, req, next, session)
       (newSession, newSession.lastRes)
-    case EmptySession =>
+    case session@EmptySession =>
       val init = initUrl(url)
       val req = f(Request(init))
-      val newSession = invokeRequest(method, req, new URL(init))
+      val newSession = invokeRequest(method, req, new URL(init), session)
       (newSession, newSession.lastRes)
   } 
 
-  private def invokeRequest(method: Method, req: Request, nextUrl: URL): SomeSession = {
+  private def invokeRequest(method: Method, req: Request, nextUrl: URL, prev: Session): SomeSession = {
     def f(req: Request): Response = {
       val res = HTTP.request(method, req)
       if(res.status / 100 == 3) {
@@ -52,7 +52,7 @@ object Http {
     println(req.contentType)
     printSummary(res)
     val cookie = res.header("Set-Cookie").map(Cookie.fromStr).getOrElse(Cookie.empty)
-    SomeSession(cookie, res, req, nextUrl)
+    SomeSession(cookie, res, req, nextUrl, prev)
   }
 
   private def initUrl(url: String): String = {
