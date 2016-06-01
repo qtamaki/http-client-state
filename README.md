@@ -13,19 +13,19 @@ sbt console
 ```
 
 ```scala
-get("myfleet.moe").run(Session.empty)._2 // get simple
-get("google.com", "q" -> "myfleet").run(Session.empty)._2 // with args
-post("hoge.com/session", "username" -> "ponkotuy", "password" -> "*****").run(Session.empty)._2 // post form
-(for {
+run(get("myfleet.moe"))._2 // get simple
+run(get("google.com", "q" -> "myfleet"))._2 // with args
+run(post("hoge.com/session", "username" -> "ponkotuy", "password" -> "*****"))._2 // post form
+run(for {
   _ <- post("hoge.com/session", ("username" -> "ponkotuy") ~ ("password" -> "*****")) // post json by using json4s
   r <- get("hoge.com/image/1") // get with cookies
-} yield r.status).run(Session.empty)._2
-get("myfleet.moe").run(Session.empty)._2 // get raw Response
-(for {
+} yield r.status)._2
+run(get("myfleet.moe"))._2 // get raw Response
+run(for {
   _ <- get("ponkotuy.com")
   r <- get("/index.html") // use host settings
-} yield r).run(Session.empty)._2
-get("https://google.com", "q" -> "myfleet").run(Session.empty)._2 // https protocol
+} yield r)._2
+run(get("https://google.com", "q" -> "myfleet")._2 // https protocol
 ```
 
 You can use get, post, head, put, delete, options and trace.
